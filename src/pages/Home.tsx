@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ChevronRight, AlertTriangle, Star, Users, MapPin, Clock, Sparkles, Brain, TrendingUp } from 'lucide-react';
+import { ChevronRight, AlertTriangle, Star, Users, MapPin, Clock, Sparkles, Brain, TrendingUp, Calendar, CheckCircle2, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -7,6 +7,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { events, categories } from '@/data/mockData';
 import { useAISuggestions } from '@/hooks/useAISuggestions';
 import { cn } from '@/lib/utils';
+import { format, differenceInDays, differenceInHours, isPast, isFuture, isToday } from 'date-fns';
+
+// Mock registered events data
+const registeredEvents = [
+  { eventId: '1', registeredAt: '2024-03-10', status: 'upcoming' as const },
+  { eventId: '2', registeredAt: '2024-03-08', status: 'upcoming' as const },
+  { eventId: '5', registeredAt: '2024-03-01', status: 'upcoming' as const },
+];
 
 const Home = () => {
   const { user } = useAuth();
@@ -14,8 +22,47 @@ const Home = () => {
 
   const popularEvents = events.slice(0, 6);
 
+  // Get registered event details
+  const myRegisteredEvents = registeredEvents.map(reg => {
+    const event = events.find(e => e.id === reg.eventId);
+    if (!event) return null;
+    
+    const eventDate = new Date(event.date);
+    const now = new Date();
+    const daysUntil = differenceInDays(eventDate, now);
+    const hoursUntil = differenceInHours(eventDate, now);
+    
+    let timeStatus = '';
+    let urgency: 'high' | 'medium' | 'low' = 'low';
+    
+    if (isToday(eventDate)) {
+      timeStatus = `Today at ${event.time}`;
+      urgency = 'high';
+    } else if (daysUntil === 1) {
+      timeStatus = `Tomorrow at ${event.time}`;
+      urgency = 'high';
+    } else if (daysUntil <= 3) {
+      timeStatus = `In ${daysUntil} days`;
+      urgency = 'medium';
+    } else if (daysUntil <= 7) {
+      timeStatus = `In ${daysUntil} days`;
+      urgency = 'low';
+    } else {
+      timeStatus = format(eventDate, 'MMM d, yyyy');
+      urgency = 'low';
+    }
+    
+    return {
+      ...event,
+      registeredAt: reg.registeredAt,
+      status: reg.status,
+      timeStatus,
+      urgency,
+      daysUntil,
+    };
+  }).filter(Boolean);
+
   const handleFeedback = (score: number) => {
-    // Submit feedback for the most recent attended event
     submitFeedback('1', score);
   };
 
@@ -40,6 +87,69 @@ const Home = () => {
               </div>
             </div>
 
+            {/* Registered Events Tracking */}
+            <div className="mt-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  <h3 className="font-medium text-sm">My Registered Events</h3>
+                </div>
+                <span className="text-xs text-muted-foreground px-2 py-1 rounded-full bg-primary/10">
+                  {myRegisteredEvents.length} events
+                </span>
+              </div>
+              
+              <div className="space-y-3">
+                {myRegisteredEvents.slice(0, 3).map((event, index) => (
+                  <Link
+                    key={event!.id}
+                    to={`/events/${event!.id}`}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-all duration-200 group"
+                  >
+                    <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+                      <img 
+                        src={event!.poster} 
+                        alt={event!.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-sm truncate">{event!.title}</h4>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                        <MapPin className="h-3 w-3" />
+                        <span className="truncate">{event!.venue}</span>
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className={cn(
+                        "flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full",
+                        event!.urgency === 'high' && "bg-orange/20 text-orange",
+                        event!.urgency === 'medium' && "bg-blue/20 text-blue",
+                        event!.urgency === 'low' && "bg-muted text-muted-foreground"
+                      )}>
+                        <Timer className="h-3 w-3" />
+                        {event!.timeStatus}
+                      </div>
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-1">
+                        <Clock className="h-2.5 w-2.5" />
+                        {event!.time}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              
+              {myRegisteredEvents.length > 3 && (
+                <Link 
+                  to="/profile?tab=events" 
+                  className="text-xs text-primary hover:underline flex items-center justify-center gap-1 mt-3"
+                >
+                  View all {myRegisteredEvents.length} events <ChevronRight className="h-3 w-3" />
+                </Link>
+              )}
+            </div>
+
+            {/* Event Clash Alert */}
             <div className="mt-4 p-3 rounded-xl bg-orange/10 border border-orange/20 flex items-center gap-3">
               <AlertTriangle className="h-5 w-5 text-orange flex-shrink-0" />
               <div className="flex-1">
@@ -48,6 +158,7 @@ const Home = () => {
               </div>
             </div>
 
+            {/* Profile Completion */}
             <div className="mt-4 space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Profile Completion</span>
