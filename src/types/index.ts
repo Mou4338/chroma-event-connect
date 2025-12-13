@@ -22,8 +22,10 @@ export interface Event {
   time: string;
   tags: string[];
   rating: number;
+  ratingCount?: number;
   registrations: number;
   society: string;
+  updates?: { message: string; timestamp: string }[];
 }
 
 export interface Recruitment {
@@ -36,6 +38,8 @@ export interface Recruitment {
   deadline: string;
   requirements: string[];
   rating: number;
+  ratingCount?: number;
+  applicants?: number;
 }
 
 export interface Announcement {

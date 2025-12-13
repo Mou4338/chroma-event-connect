@@ -51,9 +51,15 @@ const EventDetails = () => {
             <span className="px-3 py-1 rounded-full bg-primary/90 text-primary-foreground text-xs font-medium">
               {event.category}
             </span>
-            <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-card/80 backdrop-blur-sm text-xs font-medium">
-              <Star className="h-3 w-3 text-orange fill-orange" />
-              {event.rating}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-card/80 backdrop-blur-sm text-xs font-medium">
+                <Star className="h-3 w-3 text-orange fill-orange" />
+                {event.rating}
+              </div>
+              <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-card/80 backdrop-blur-sm text-xs font-medium">
+                <Users className="h-3 w-3 text-primary" />
+                {event.ratingCount || 0} rated
+              </div>
             </div>
           </div>
         </div>

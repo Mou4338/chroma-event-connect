@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ChevronRight, AlertTriangle, Star, Users, MapPin, Clock, Sparkles, Brain, TrendingUp, Calendar, CheckCircle2, Timer } from 'lucide-react';
+import { ChevronRight, AlertTriangle, Star, Users, MapPin, Clock, Sparkles, Brain, TrendingUp, Calendar, Timer, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -100,43 +100,56 @@ const Home = () => {
               </div>
               
               <div className="space-y-3">
-                {myRegisteredEvents.slice(0, 3).map((event, index) => (
-                  <Link
-                    key={event!.id}
-                    to={`/events/${event!.id}`}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-all duration-200 group"
-                  >
-                    <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
-                      <img 
-                        src={event!.poster} 
-                        alt={event!.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sm truncate">{event!.title}</h4>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                        <MapPin className="h-3 w-3" />
-                        <span className="truncate">{event!.venue}</span>
+                {myRegisteredEvents.slice(0, 3).map((event) => {
+                  const eventData = events.find(e => e.id === event!.id);
+                  const hasUpdates = eventData?.updates && eventData.updates.length > 0;
+                  
+                  return (
+                    <Link
+                      key={event!.id}
+                      to={`/events/${event!.id}`}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-all duration-200 group relative"
+                    >
+                      {hasUpdates && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange rounded-full animate-pulse" />
+                      )}
+                      <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+                        <img 
+                          src={event!.poster} 
+                          alt={event!.title}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                        />
                       </div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <div className={cn(
-                        "flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full",
-                        event!.urgency === 'high' && "bg-orange/20 text-orange",
-                        event!.urgency === 'medium' && "bg-blue/20 text-blue",
-                        event!.urgency === 'low' && "bg-muted text-muted-foreground"
-                      )}>
-                        <Timer className="h-3 w-3" />
-                        {event!.timeStatus}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm truncate">{event!.title}</h4>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                          <MapPin className="h-3 w-3" />
+                          <span className="truncate">{event!.venue}</span>
+                        </div>
+                        {hasUpdates && (
+                          <p className="text-[10px] text-orange mt-1 truncate">
+                            📢 {eventData?.updates?.[0].message}
+                          </p>
+                        )}
                       </div>
-                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-1">
-                        <Clock className="h-2.5 w-2.5" />
-                        {event!.time}
+                      <div className="text-right flex-shrink-0">
+                        <div className={cn(
+                          "flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full",
+                          event!.urgency === 'high' && "bg-orange/20 text-orange",
+                          event!.urgency === 'medium' && "bg-blue/20 text-blue",
+                          event!.urgency === 'low' && "bg-muted text-muted-foreground"
+                        )}>
+                          <Timer className="h-3 w-3" />
+                          {event!.timeStatus}
+                        </div>
+                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-1">
+                          <Star className="h-2.5 w-2.5 text-orange fill-orange" />
+                          {eventData?.rating} ({eventData?.ratingCount || 0})
+                        </div>
                       </div>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  );
+                })}
               </div>
               
               {myRegisteredEvents.length > 3 && (
