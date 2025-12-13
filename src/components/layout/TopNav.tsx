@@ -1,10 +1,21 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Search, Bell, Calendar, Trophy, Menu, X } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Search, Bell, Calendar, Trophy, Menu, X, SlidersHorizontal, Tag, Filter } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+
+interface SearchFilters {
+  query: string;
+  category: string;
+  dateRange: string;
+  sortBy: string;
+}
+
+const categories = ['All', 'Technical', 'Cultural', 'Sports', 'Workshop', 'Business', 'Creative'];
+const dateRanges = ['Any Time', 'Today', 'This Week', 'This Month'];
+const sortOptions = ['Relevance', 'Date', 'Rating', 'Popularity'];
 
 const navLinks = [
   { path: '/', label: 'Home' },
@@ -17,7 +28,32 @@ const navLinks = [
 export const TopNav = () => {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<SearchFilters>({
+    query: '',
+    category: 'All',
+    dateRange: 'Any Time',
+    sortBy: 'Relevance',
+  });
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    if (searchQuery) params.set('q', searchQuery);
+    if (filters.category !== 'All') params.set('category', filters.category.toLowerCase());
+    if (filters.dateRange !== 'Any Time') params.set('date', filters.dateRange.toLowerCase().replace(' ', '-'));
+    if (filters.sortBy !== 'Relevance') params.set('sort', filters.sortBy.toLowerCase());
+    navigate(`/events?${params.toString()}`);
+  };
+
+  const activeFiltersCount = [
+    filters.category !== 'All',
+    filters.dateRange !== 'Any Time',
+    filters.sortBy !== 'Relevance',
+  ].filter(Boolean).length;
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border/50">
@@ -77,15 +113,125 @@ export const TopNav = () => {
           </div>
         </nav>
 
-        {/* Search Bar */}
+        {/* Search Bar with Filters */}
         <div className="px-4 pb-3">
-          <div className="relative max-w-2xl mx-auto">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search events, societies, announcements..."
-              className="pl-10 h-10 bg-muted/50"
-            />
-          </div>
+          <form onSubmit={handleSearch} className="relative max-w-2xl mx-auto">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search events, societies, announcements..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-10 bg-muted/50"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              <Button
+                type="button"
+                variant={showFilters ? 'gradient' : 'glass'}
+                size="icon"
+                className="h-10 w-10 relative flex-shrink-0"
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                {activeFiltersCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-orange rounded-full text-[10px] text-primary-foreground flex items-center justify-center font-bold">
+                    {activeFiltersCount}
+                  </span>
+                )}
+              </Button>
+            </div>
+          </form>
+          
+          {/* Filters Panel */}
+          {showFilters && (
+            <div className="max-w-2xl mx-auto mt-3 glass-card p-4 space-y-4 animate-slide-up">
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Tag className="h-4 w-4 text-primary" />
+                  Category
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {categories.map((cat) => (
+                    <Button
+                      key={cat}
+                      type="button"
+                      variant={filters.category === cat ? 'gradient' : 'glass'}
+                      size="sm"
+                      onClick={() => setFilters({ ...filters, category: cat })}
+                      className="h-7 text-xs"
+                    >
+                      {cat}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-secondary" />
+                  Date Range
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {dateRanges.map((range) => (
+                    <Button
+                      key={range}
+                      type="button"
+                      variant={filters.dateRange === range ? 'gradient' : 'glass'}
+                      size="sm"
+                      onClick={() => setFilters({ ...filters, dateRange: range })}
+                      className="h-7 text-xs"
+                    >
+                      {range}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-accent" />
+                  Sort By
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {sortOptions.map((option) => (
+                    <Button
+                      key={option}
+                      type="button"
+                      variant={filters.sortBy === option ? 'gradient' : 'glass'}
+                      size="sm"
+                      onClick={() => setFilters({ ...filters, sortBy: option })}
+                      className="h-7 text-xs"
+                    >
+                      {option}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              
+              {activeFiltersCount > 0 && (
+                <Button 
+                  type="button"
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setFilters({ query: '', category: 'All', dateRange: 'Any Time', sortBy: 'Relevance' })}
+                  className="w-full text-muted-foreground"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Clear All Filters
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

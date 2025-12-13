@@ -12,8 +12,13 @@ export const events: Event[] = [
     time: '10:00 AM',
     tags: ['Coding', 'Hackathon', 'Tech Talks'],
     rating: 4.8,
+    ratingCount: 156,
     registrations: 450,
     society: 'KIIT Tech Society',
+    updates: [
+      { message: 'Registration deadline extended to March 12th!', timestamp: '2 hours ago' },
+      { message: 'New workshop on AI/ML added to the schedule', timestamp: '1 day ago' },
+    ],
   },
   {
     id: '2',
@@ -26,8 +31,12 @@ export const events: Event[] = [
     time: '6:00 PM',
     tags: ['Dance', 'Music', 'Theatre'],
     rating: 4.6,
+    ratingCount: 234,
     registrations: 800,
     society: 'Cultural Committee',
+    updates: [
+      { message: 'Auditions for dance performances on March 5th', timestamp: '5 hours ago' },
+    ],
   },
   {
     id: '3',
@@ -40,8 +49,13 @@ export const events: Event[] = [
     time: '9:00 AM',
     tags: ['Entrepreneurship', 'Networking', 'Pitching'],
     rating: 4.9,
+    ratingCount: 89,
     registrations: 300,
     society: 'E-Cell KIIT',
+    updates: [
+      { message: 'Guest speaker: Mr. Vijay Shekhar Sharma, CEO of Paytm!', timestamp: '1 day ago' },
+      { message: 'Pitching round details announced', timestamp: '2 days ago' },
+    ],
   },
   {
     id: '4',
@@ -54,8 +68,12 @@ export const events: Event[] = [
     time: '8:00 AM',
     tags: ['Cricket', 'Football', 'Athletics'],
     rating: 4.7,
+    ratingCount: 312,
     registrations: 600,
     society: 'Sports Committee',
+    updates: [
+      { message: 'Team registration now open!', timestamp: '3 hours ago' },
+    ],
   },
   {
     id: '5',
@@ -68,8 +86,12 @@ export const events: Event[] = [
     time: '2:00 PM',
     tags: ['AI', 'Machine Learning', 'Workshop'],
     rating: 4.5,
+    ratingCount: 67,
     registrations: 150,
     society: 'AI Club',
+    updates: [
+      { message: 'Prerequisites: Basic Python knowledge required', timestamp: '1 day ago' },
+    ],
   },
   {
     id: '6',
@@ -82,8 +104,10 @@ export const events: Event[] = [
     time: '11:00 AM',
     tags: ['Photography', 'Art', 'Competition'],
     rating: 4.4,
+    ratingCount: 45,
     registrations: 200,
     society: 'Photography Club',
+    updates: [],
   },
 ];
 
@@ -100,35 +124,41 @@ export const recruitments: Recruitment[] = [
   {
     id: '1',
     title: 'Tech Society Core Team',
-    description: 'Join the core team of KIIT Tech Society and lead technical initiatives.',
+    description: 'Join the core team of KIIT Tech Society and lead technical initiatives. You will be responsible for organizing hackathons, tech talks, and mentoring juniors.',
     category: 'Technical',
     poster: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=400',
     society: 'KIIT Tech Society',
     deadline: '2024-03-20',
     requirements: ['2nd year+', 'Coding experience', 'Leadership skills'],
     rating: 4.9,
+    ratingCount: 78,
+    applicants: 156,
   },
   {
     id: '2',
     title: 'Cultural Committee Members',
-    description: 'Be part of the team that organizes the most vibrant cultural events.',
+    description: 'Be part of the team that organizes the most vibrant cultural events on campus. Help plan and execute festivals, performances, and competitions.',
     category: 'Cultural',
     poster: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400',
     society: 'Cultural Committee',
     deadline: '2024-03-25',
     requirements: ['Any year', 'Creative mindset', 'Team player'],
     rating: 4.7,
+    ratingCount: 124,
+    applicants: 234,
   },
   {
     id: '3',
     title: 'E-Cell Marketing Head',
-    description: 'Lead the marketing initiatives for entrepreneurship cell events.',
+    description: 'Lead the marketing initiatives for entrepreneurship cell events. Create campaigns, manage social media, and build brand awareness.',
     category: 'Business',
     poster: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400',
     society: 'E-Cell KIIT',
     deadline: '2024-03-28',
     requirements: ['Marketing skills', 'Social media savvy', 'Communication'],
     rating: 4.8,
+    ratingCount: 56,
+    applicants: 89,
   },
 ];
 

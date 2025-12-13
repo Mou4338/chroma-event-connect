@@ -11,6 +11,7 @@ import Home from "./pages/Home";
 import Events from "./pages/Events";
 import EventDetails from "./pages/EventDetails";
 import Recruitment from "./pages/Recruitment";
+import RecruitmentDetails from "./pages/RecruitmentDetails";
 import Announcements from "./pages/Announcements";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
@@ -41,7 +42,7 @@ const AppRoutes = () => (
     <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
     <Route path="/events/:id" element={<ProtectedRoute><EventDetails /></ProtectedRoute>} />
     <Route path="/recruitment" element={<ProtectedRoute><Recruitment /></ProtectedRoute>} />
-    <Route path="/recruitment/:id" element={<ProtectedRoute><Recruitment /></ProtectedRoute>} />
+    <Route path="/recruitment/:id" element={<ProtectedRoute><RecruitmentDetails /></ProtectedRoute>} />
     <Route path="/announcements" element={<ProtectedRoute><Announcements /></ProtectedRoute>} />
     <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
