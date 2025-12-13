@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Star, MapPin, Clock, Users, MessageSquare, ChevronRight, QrCode } from 'lucide-react';
+import { Star, MapPin, Clock, Users, MessageSquare, ChevronRight, QrCode, Sparkles, Brain, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { events } from '@/data/mockData';
+import { getSimilarEvents, useAISuggestions } from '@/hooks/useAISuggestions';
 import { toast } from 'sonner';
 
 const EventDetails = () => {
@@ -13,11 +14,13 @@ const EventDetails = () => {
   const [userRating, setUserRating] = useState(0);
   const [comment, setComment] = useState('');
   const [isRegistered, setIsRegistered] = useState(false);
-
-  const similarEvents = events.filter((e) => e.category === event.category && e.id !== event.id).slice(0, 3);
+  
+  const { registerForEvent, rateEvent, submitFeedback } = useAISuggestions();
+  const similarEvents = getSimilarEvents(event, 4);
 
   const handleRegister = () => {
     setIsRegistered(true);
+    registerForEvent(event.id);
     toast.success('Successfully registered for the event!');
   };
 
@@ -26,14 +29,16 @@ const EventDetails = () => {
       toast.error('Please select a rating');
       return;
     }
-    toast.success('Review submitted!');
+    rateEvent(event.id, userRating);
+    submitFeedback(event.id, userRating);
+    toast.success('Review submitted! This helps improve your recommendations.');
     setComment('');
     setUserRating(0);
   };
 
   return (
     <MainLayout>
-      <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
+      <div className="space-y-6 animate-fade-in max-w-3xl mx-auto particles-bg">
         {/* Banner */}
         <div className="relative -mx-4 -mt-4 sm:mx-0 sm:rounded-2xl overflow-hidden">
           <img
@@ -42,20 +47,24 @@ const EventDetails = () => {
             className="w-full h-56 sm:h-72 object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
-          <div className="absolute bottom-4 left-4 right-4">
+          <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
             <span className="px-3 py-1 rounded-full bg-primary/90 text-primary-foreground text-xs font-medium">
               {event.category}
             </span>
+            <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-card/80 backdrop-blur-sm text-xs font-medium">
+              <Star className="h-3 w-3 text-orange fill-orange" />
+              {event.rating}
+            </div>
           </div>
         </div>
 
         {/* Info Section */}
-        <div className="glass-card p-6 space-y-4">
-          <h1 className="text-2xl font-bold">{event.title}</h1>
+        <div className="glass-card p-6 space-y-4 animated-border">
+          <h1 className="text-2xl font-bold gradient-text">{event.title}</h1>
           <p className="text-muted-foreground">{event.description}</p>
           
           <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <Clock className="h-5 w-5 text-primary" />
               </div>
@@ -64,7 +73,7 @@ const EventDetails = () => {
                 <p className="text-sm font-medium">{event.date} • {event.time}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30">
               <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center">
                 <MapPin className="h-5 w-5 text-secondary" />
               </div>
@@ -73,7 +82,7 @@ const EventDetails = () => {
                 <p className="text-sm font-medium">{event.venue}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30">
               <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
                 <Users className="h-5 w-5 text-accent" />
               </div>
@@ -82,20 +91,20 @@ const EventDetails = () => {
                 <p className="text-sm font-medium">{event.registrations} students</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30">
               <div className="w-10 h-10 rounded-xl bg-orange/10 flex items-center justify-center">
-                <Star className="h-5 w-5 text-orange" />
+                <TrendingUp className="h-5 w-5 text-orange" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Rating</p>
-                <p className="text-sm font-medium">{event.rating} / 5.0</p>
+                <p className="text-xs text-muted-foreground">Society</p>
+                <p className="text-sm font-medium">{event.society}</p>
               </div>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-2 pt-2">
             {event.tags.map((tag) => (
-              <span key={tag} className="px-3 py-1 rounded-full bg-muted text-muted-foreground text-xs font-medium">
+              <span key={tag} className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
                 {tag}
               </span>
             ))}
@@ -106,7 +115,7 @@ const EventDetails = () => {
         <Button 
           variant="gradient" 
           size="xl" 
-          className="w-full"
+          className="w-full neon-glow"
           onClick={handleRegister}
           disabled={isRegistered}
         >
@@ -115,9 +124,9 @@ const EventDetails = () => {
 
         {/* QR Code */}
         {isRegistered && (
-          <div className="glass-card p-6 text-center">
-            <div className="w-32 h-32 mx-auto bg-muted rounded-xl flex items-center justify-center mb-4">
-              <QrCode className="h-16 w-16 text-muted-foreground" />
+          <div className="glass-card p-6 text-center animated-border">
+            <div className="w-32 h-32 mx-auto bg-muted/50 rounded-xl flex items-center justify-center mb-4">
+              <QrCode className="h-16 w-16 text-primary" />
             </div>
             <p className="text-sm text-muted-foreground">Scan this QR code at the venue</p>
           </div>
@@ -125,7 +134,12 @@ const EventDetails = () => {
 
         {/* Rating Section */}
         <div className="glass-card p-6 space-y-4">
-          <h2 className="font-semibold">Rate This Event</h2>
+          <div className="flex items-center gap-2">
+            <Brain className="h-5 w-5 text-primary" />
+            <h2 className="font-semibold">Rate This Event</h2>
+            <Sparkles className="h-4 w-4 text-orange animate-pulse" />
+          </div>
+          <p className="text-xs text-muted-foreground -mt-2">Your rating helps personalize your recommendations</p>
           <div className="flex gap-2">
             {[1, 2, 3, 4, 5].map((star) => (
               <button
@@ -134,7 +148,7 @@ const EventDetails = () => {
                 className="text-3xl transition-transform hover:scale-110"
               >
                 <Star
-                  className={`h-8 w-8 ${star <= userRating ? 'text-orange fill-orange' : 'text-muted-foreground'}`}
+                  className={`h-8 w-8 transition-colors ${star <= userRating ? 'text-orange fill-orange' : 'text-muted-foreground hover:text-orange/50'}`}
                 />
               </button>
             ))}
@@ -144,15 +158,17 @@ const EventDetails = () => {
         {/* Comments Section */}
         <div className="glass-card p-6 space-y-4">
           <h2 className="font-semibold flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
+            <MessageSquare className="h-5 w-5 text-accent" />
             Reviews & Comments
           </h2>
           
           <div className="space-y-3">
             {[1, 2].map((_, i) => (
-              <div key={i} className="p-4 rounded-xl bg-muted/50">
+              <div key={i} className="p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-full gradient-bg" />
+                  <div className="w-8 h-8 rounded-full gradient-bg flex items-center justify-center text-primary-foreground text-xs font-medium">
+                    S{i + 1}
+                  </div>
                   <div>
                     <p className="text-sm font-medium">Student {i + 1}</p>
                     <div className="flex">
@@ -172,7 +188,7 @@ const EventDetails = () => {
               placeholder="Write your review..."
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              className="resize-none"
+              className="resize-none bg-muted/30"
             />
             <Button onClick={handleSubmitReview} className="w-full" variant="secondary">
               Submit Review
@@ -186,20 +202,25 @@ const EventDetails = () => {
           Join Event Group
         </Button>
 
-        {/* Similar Events */}
+        {/* AI-Powered Similar Events */}
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Similar Events</h2>
+            <div className="flex items-center gap-2">
+              <Brain className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-semibold">AI Suggests</h2>
+              <Sparkles className="h-4 w-4 text-orange animate-pulse" />
+            </div>
             <Link to="/events" className="text-sm text-primary hover:underline flex items-center gap-1">
               View All <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
+          <p className="text-xs text-muted-foreground mb-3 -mt-2">Events similar to {event.title}</p>
           <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-            {similarEvents.map((evt) => (
+            {similarEvents.map((evt, index) => (
               <Link
                 key={evt.id}
                 to={`/events/${evt.id}`}
-                className="flex-shrink-0 w-48 glass-card overflow-hidden group hover:shadow-elevated transition-all duration-300"
+                className="flex-shrink-0 w-48 glass-card overflow-hidden group hover:shadow-elevated transition-all duration-300 ai-sparkle"
               >
                 <div className="relative h-28 overflow-hidden">
                   <img
@@ -207,6 +228,13 @@ const EventDetails = () => {
                     alt={evt.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent" />
+                  {index === 0 && (
+                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-gradient-to-r from-primary to-accent text-[10px] font-medium text-primary-foreground flex items-center gap-1">
+                      <Sparkles className="h-2 w-2" />
+                      Best Match
+                    </div>
+                  )}
                 </div>
                 <div className="p-3">
                   <h3 className="font-medium text-sm line-clamp-1">{evt.title}</h3>
