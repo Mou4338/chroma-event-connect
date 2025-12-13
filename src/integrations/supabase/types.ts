@@ -14,7 +14,241 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      categories: {
+        Row: {
+          created_at: string
+          icon: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          icon: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          icon?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      event_ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          event_id: string
+          id: string
+          rating: number
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          rating: number
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          rating?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_ratings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_updates: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          message: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          message: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          message?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_updates_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          date: string
+          description: string
+          id: string
+          poster: string
+          rating: number | null
+          rating_count: number | null
+          registrations: number | null
+          society: string
+          tags: string[] | null
+          time: string
+          title: string
+          updated_at: string
+          venue: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          date: string
+          description: string
+          id?: string
+          poster: string
+          rating?: number | null
+          rating_count?: number | null
+          registrations?: number | null
+          society: string
+          tags?: string[] | null
+          time: string
+          title: string
+          updated_at?: string
+          venue: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          date?: string
+          description?: string
+          id?: string
+          poster?: string
+          rating?: number | null
+          rating_count?: number | null
+          registrations?: number | null
+          society?: string
+          tags?: string[] | null
+          time?: string
+          title?: string
+          updated_at?: string
+          venue?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recruitments: {
+        Row: {
+          applicants: number | null
+          category_id: string | null
+          created_at: string
+          deadline: string
+          description: string
+          id: string
+          poster: string
+          rating: number | null
+          rating_count: number | null
+          requirements: string[] | null
+          society: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          applicants?: number | null
+          category_id?: string | null
+          created_at?: string
+          deadline: string
+          description: string
+          id?: string
+          poster: string
+          rating?: number | null
+          rating_count?: number | null
+          requirements?: string[] | null
+          society: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          applicants?: number | null
+          category_id?: string | null
+          created_at?: string
+          deadline?: string
+          description?: string
+          id?: string
+          poster?: string
+          rating?: number | null
+          rating_count?: number | null
+          requirements?: string[] | null
+          society?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruitments_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_registrations: {
+        Row: {
+          attended: boolean | null
+          event_id: string
+          id: string
+          registered_at: string
+          user_id: string
+        }
+        Insert: {
+          attended?: boolean | null
+          event_id: string
+          id?: string
+          registered_at?: string
+          user_id: string
+        }
+        Update: {
+          attended?: boolean | null
+          event_id?: string
+          id?: string
+          registered_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
