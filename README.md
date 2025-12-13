@@ -1,4 +1,4 @@
-# 🎓 Event Navigator – College Event Management System
+#  Event Navigator – College Event Management System
 
 Event Navigator is a modern, user-friendly event management website designed specifically for college students.  
 It helps students *discover, register, track, and manage college events* from a single platform.
@@ -7,7 +7,7 @@ The application follows a *pink–purple–blue–orange gradient theme* and foc
 
 ---
 
-## 📌 Project Overview
+##  Project Overview
 
 Event Navigator simplifies the entire college event ecosystem by:
 - Centralizing all events, recruitments, and announcements
@@ -17,7 +17,7 @@ Event Navigator simplifies the entire college event ecosystem by:
 
 ---
 
-## 🔐 Authentication & User Registration
+##  Authentication & User Registration
 
 ### Sign In / Sign Up Features
 - Secure authentication system
