@@ -14,12 +14,22 @@ import Recruitment from "./pages/Recruitment";
 import RecruitmentDetails from "./pages/RecruitmentDetails";
 import Announcements from "./pages/Announcements";
 import Profile from "./pages/Profile";
+import Organizer from "./pages/Organizer";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
@@ -27,7 +37,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
   }
@@ -45,6 +64,7 @@ const AppRoutes = () => (
     <Route path="/recruitment/:id" element={<ProtectedRoute><RecruitmentDetails /></ProtectedRoute>} />
     <Route path="/announcements" element={<ProtectedRoute><Announcements /></ProtectedRoute>} />
     <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+    <Route path="/organizer" element={<ProtectedRoute><Organizer /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

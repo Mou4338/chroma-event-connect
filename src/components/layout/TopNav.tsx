@@ -22,6 +22,7 @@ const navLinks = [
   { path: '/events', label: 'Events' },
   { path: '/recruitment', label: 'Recruitment' },
   { path: '/announcements', label: 'Announcements' },
+  { path: '/organizer', label: 'Organizer' },
   { path: '/profile', label: 'Profile' },
 ];
 

@@ -1,36 +1,69 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, AlertTriangle, Star, Users, MapPin, Clock, Sparkles, Brain, TrendingUp, Calendar, Timer, Bell } from 'lucide-react';
+import { ChevronRight, AlertTriangle, Star, Users, MapPin, Clock, Sparkles, Brain, TrendingUp, Calendar, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { events, categories } from '@/data/mockData';
+import { fetchEvents, fetchCategories } from '@/lib/database';
 import { useAISuggestions } from '@/hooks/useAISuggestions';
 import { cn } from '@/lib/utils';
-import { format, differenceInDays, differenceInHours, isPast, isFuture, isToday } from 'date-fns';
+import { format, differenceInDays, isToday } from 'date-fns';
 
-// Mock registered events data
-const registeredEvents = [
-  { eventId: '1', registeredAt: '2024-03-10', status: 'upcoming' as const },
-  { eventId: '2', registeredAt: '2024-03-08', status: 'upcoming' as const },
-  { eventId: '5', registeredAt: '2024-03-01', status: 'upcoming' as const },
-];
+interface DbEvent {
+  id: string;
+  title: string;
+  description: string;
+  category_id: string | null;
+  poster: string;
+  venue: string;
+  date: string;
+  time: string;
+  tags: string[];
+  rating: number;
+  rating_count: number;
+  registrations: number;
+  society: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  icon: string;
+}
 
 const Home = () => {
   const { user } = useAuth();
   const { suggestions, loading: aiLoading, submitFeedback } = useAISuggestions(4);
+  const [events, setEvents] = useState<DbEvent[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [eventsData, categoriesData] = await Promise.all([
+          fetchEvents(),
+          fetchCategories()
+        ]);
+        setEvents(eventsData || []);
+        setCategories(categoriesData || []);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
   const popularEvents = events.slice(0, 6);
-
-  // Get registered event details
-  const myRegisteredEvents = registeredEvents.map(reg => {
-    const event = events.find(e => e.id === reg.eventId);
-    if (!event) return null;
-    
+  
+  // Get upcoming events as "registered" for demo
+  const myRegisteredEvents = events.slice(0, 3).map(event => {
     const eventDate = new Date(event.date);
     const now = new Date();
     const daysUntil = differenceInDays(eventDate, now);
-    const hoursUntil = differenceInHours(eventDate, now);
     
     let timeStatus = '';
     let urgency: 'high' | 'medium' | 'low' = 'low';
@@ -52,15 +85,8 @@ const Home = () => {
       urgency = 'low';
     }
     
-    return {
-      ...event,
-      registeredAt: reg.registeredAt,
-      status: reg.status,
-      timeStatus,
-      urgency,
-      daysUntil,
-    };
-  }).filter(Boolean);
+    return { ...event, timeStatus, urgency };
+  });
 
   const handleFeedback = (score: number) => {
     submitFeedback('1', score);
@@ -100,56 +126,43 @@ const Home = () => {
               </div>
               
               <div className="space-y-3">
-                {myRegisteredEvents.slice(0, 3).map((event) => {
-                  const eventData = events.find(e => e.id === event!.id);
-                  const hasUpdates = eventData?.updates && eventData.updates.length > 0;
-                  
-                  return (
-                    <Link
-                      key={event!.id}
-                      to={`/events/${event!.id}`}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-all duration-200 group relative"
-                    >
-                      {hasUpdates && (
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange rounded-full animate-pulse" />
-                      )}
-                      <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
-                        <img 
-                          src={event!.poster} 
-                          alt={event!.title}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform"
-                        />
+                {myRegisteredEvents.slice(0, 3).map((event) => (
+                  <Link
+                    key={event.id}
+                    to={`/events/${event.id}`}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-all duration-200 group relative"
+                  >
+                    <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+                      <img 
+                        src={event.poster} 
+                        alt={event.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-sm truncate">{event.title}</h4>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                        <MapPin className="h-3 w-3" />
+                        <span className="truncate">{event.venue}</span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm truncate">{event!.title}</h4>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                          <MapPin className="h-3 w-3" />
-                          <span className="truncate">{event!.venue}</span>
-                        </div>
-                        {hasUpdates && (
-                          <p className="text-[10px] text-orange mt-1 truncate">
-                            📢 {eventData?.updates?.[0].message}
-                          </p>
-                        )}
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className={cn(
+                        "flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full",
+                        event.urgency === 'high' && "bg-orange/20 text-orange",
+                        event.urgency === 'medium' && "bg-blue/20 text-blue",
+                        event.urgency === 'low' && "bg-muted text-muted-foreground"
+                      )}>
+                        <Timer className="h-3 w-3" />
+                        {event.timeStatus}
                       </div>
-                      <div className="text-right flex-shrink-0">
-                        <div className={cn(
-                          "flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full",
-                          event!.urgency === 'high' && "bg-orange/20 text-orange",
-                          event!.urgency === 'medium' && "bg-blue/20 text-blue",
-                          event!.urgency === 'low' && "bg-muted text-muted-foreground"
-                        )}>
-                          <Timer className="h-3 w-3" />
-                          {event!.timeStatus}
-                        </div>
-                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-1">
-                          <Star className="h-2.5 w-2.5 text-orange fill-orange" />
-                          {eventData?.rating} ({eventData?.ratingCount || 0})
-                        </div>
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-1">
+                        <Star className="h-2.5 w-2.5 text-orange fill-orange" />
+                        {event.rating} ({event.rating_count || 0})
                       </div>
-                    </Link>
-                  );
-                })}
+                    </div>
+                  </Link>
+                ))}
               </div>
               
               {myRegisteredEvents.length > 3 && (
@@ -266,13 +279,12 @@ const Home = () => {
             {categories.map((cat, index) => (
               <Link
                 key={cat.id}
-                to={`/events?category=${cat.id}`}
+                to={`/events?category=${cat.name.toLowerCase()}`}
                 className="glass-card p-4 text-center hover:shadow-elevated transition-all duration-300 group"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <span className="text-2xl block mb-2 group-hover:scale-110 transition-transform">{cat.icon}</span>
                 <span className="text-xs font-medium">{cat.name}</span>
-                <span className="block text-[10px] text-muted-foreground mt-1">{cat.count} events</span>
               </Link>
             ))}
           </div>

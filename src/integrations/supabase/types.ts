@@ -103,6 +103,7 @@ export type Database = {
         Row: {
           category_id: string | null
           created_at: string
+          created_by: string | null
           date: string
           description: string
           id: string
@@ -120,6 +121,7 @@ export type Database = {
         Insert: {
           category_id?: string | null
           created_at?: string
+          created_by?: string | null
           date: string
           description: string
           id?: string
@@ -137,6 +139,7 @@ export type Database = {
         Update: {
           category_id?: string | null
           created_at?: string
+          created_by?: string | null
           date?: string
           description?: string
           id?: string
@@ -166,6 +169,7 @@ export type Database = {
           applicants: number | null
           category_id: string | null
           created_at: string
+          created_by: string | null
           deadline: string
           description: string
           id: string
@@ -181,6 +185,7 @@ export type Database = {
           applicants?: number | null
           category_id?: string | null
           created_at?: string
+          created_by?: string | null
           deadline: string
           description: string
           id?: string
@@ -196,6 +201,7 @@ export type Database = {
           applicants?: number | null
           category_id?: string | null
           created_at?: string
+          created_by?: string | null
           deadline?: string
           description?: string
           id?: string

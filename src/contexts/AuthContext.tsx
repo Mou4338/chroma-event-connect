@@ -1,21 +1,80 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { User } from '@/types';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { User as AppUser } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+import { User, Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
-  user: User | null;
+  user: AppUser | null;
+  supabaseUser: User | null;
+  session: Session | null;
   isAuthenticated: boolean;
+  loading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  signup: (userData: Partial<User> & { password: string }) => Promise<boolean>;
-  logout: () => void;
+  signup: (userData: Partial<AppUser> & { password: string }) => Promise<boolean>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('user');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [user, setUser] = useState<AppUser | null>(null);
+  const [supabaseUser, setSupabaseUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setSupabaseUser(session?.user ?? null);
+        
+        if (session?.user) {
+          const metadata = session.user.user_metadata;
+          const appUser: AppUser = {
+            id: session.user.id,
+            username: metadata.username || session.user.email?.split('@')[0] || 'User',
+            email: session.user.email || '',
+            programme: metadata.programme || 'B.TECH',
+            branch: metadata.branch || 'CSE',
+            year: metadata.year || '1st Year',
+            passingYear: metadata.passingYear || '2028',
+            mobileNumber: metadata.mobileNumber,
+            points: metadata.points || 0,
+          };
+          setUser(appUser);
+        } else {
+          setUser(null);
+        }
+        setLoading(false);
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setSupabaseUser(session?.user ?? null);
+      
+      if (session?.user) {
+        const metadata = session.user.user_metadata;
+        const appUser: AppUser = {
+          id: session.user.id,
+          username: metadata.username || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || '',
+          programme: metadata.programme || 'B.TECH',
+          branch: metadata.branch || 'CSE',
+          year: metadata.year || '1st Year',
+          passingYear: metadata.passingYear || '2028',
+          mobileNumber: metadata.mobileNumber,
+          points: metadata.points || 0,
+        };
+        setUser(appUser);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     // Validate KIIT email format
@@ -30,24 +89,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       throw new Error('Password must be at least 8 characters with uppercase, lowercase, digit, and special character');
     }
 
-    // Simulated login - in production, this would call an API
-    const mockUser: User = {
-      id: '1',
-      username: email.split('@')[0],
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
-      programme: 'B.TECH',
-      branch: 'CSE',
-      year: '2nd Year',
-      passingYear: '2027',
-      points: 1250,
-    };
+      password,
+    });
 
-    setUser(mockUser);
-    localStorage.setItem('user', JSON.stringify(mockUser));
-    return true;
+    if (error) throw error;
+    return !!data.user;
   };
 
-  const signup = async (userData: Partial<User> & { password: string }): Promise<boolean> => {
+  const signup = async (userData: Partial<AppUser> & { password: string }): Promise<boolean> => {
     // Validate KIIT email format
     const emailRegex = /^[a-zA-Z0-9]+@kiit\.ac\.in$/;
     if (!userData.email || !emailRegex.test(userData.email)) {
@@ -60,31 +111,47 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       throw new Error('Password must be at least 8 characters with uppercase, lowercase, digit, and special character');
     }
 
-    // Simulated signup
-    const newUser: User = {
-      id: Date.now().toString(),
-      username: userData.username || userData.email.split('@')[0],
-      email: userData.email,
-      programme: userData.programme || 'B.TECH',
-      branch: userData.branch || 'CSE',
-      year: userData.year || '1st Year',
-      passingYear: userData.passingYear || '2028',
-      mobileNumber: userData.mobileNumber,
-      points: 0,
-    };
+    const redirectUrl = `${window.location.origin}/`;
 
-    setUser(newUser);
-    localStorage.setItem('user', JSON.stringify(newUser));
-    return true;
+    const { data, error } = await supabase.auth.signUp({
+      email: userData.email,
+      password: userData.password,
+      options: {
+        emailRedirectTo: redirectUrl,
+        data: {
+          username: userData.username || userData.email.split('@')[0],
+          programme: userData.programme || 'B.TECH',
+          branch: userData.branch || 'CSE',
+          year: userData.year || '1st Year',
+          passingYear: userData.passingYear || '2028',
+          mobileNumber: userData.mobileNumber,
+          points: 0,
+        },
+      },
+    });
+
+    if (error) throw error;
+    return !!data.user;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem('user');
+    setSupabaseUser(null);
+    setSession(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, signup, logout }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      supabaseUser,
+      session,
+      isAuthenticated: !!session, 
+      loading,
+      login, 
+      signup, 
+      logout 
+    }}>
       {children}
     </AuthContext.Provider>
   );
