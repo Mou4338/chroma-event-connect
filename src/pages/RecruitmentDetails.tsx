@@ -1,22 +1,62 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Star, Clock, Users, MessageSquare, ChevronRight, Sparkles, Brain, TrendingUp, Briefcase, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { recruitments } from '@/data/mockData';
+import { fetchRecruitmentById, fetchRecruitments } from '@/lib/database';
 import { toast } from 'sonner';
+
+interface DbRecruitment {
+  id: string;
+  title: string;
+  description: string;
+  category_id: string | null;
+  poster: string;
+  society: string;
+  deadline: string;
+  requirements: string[];
+  rating: number;
+  rating_count: number;
+  applicants: number;
+  categories?: { name: string; icon: string } | null;
+}
 
 const RecruitmentDetails = () => {
   const { id } = useParams();
-  const recruitment = recruitments.find((r) => r.id === id) || recruitments[0];
+  const [recruitment, setRecruitment] = useState<DbRecruitment | null>(null);
+  const [allRecruitments, setAllRecruitments] = useState<DbRecruitment[]>([]);
+  const [loading, setLoading] = useState(true);
   const [userRating, setUserRating] = useState(0);
   const [comment, setComment] = useState('');
   const [hasApplied, setHasApplied] = useState(false);
 
-  const similarRecruitments = recruitments
-    .filter((r) => r.id !== recruitment.id && r.category === recruitment.category)
-    .slice(0, 4);
+  useEffect(() => {
+    const loadData = async () => {
+      if (!id) return;
+      
+      setLoading(true);
+      try {
+        const [recruitmentData, recruitmentsData] = await Promise.all([
+          fetchRecruitmentById(id),
+          fetchRecruitments()
+        ]);
+        setRecruitment(recruitmentData);
+        setAllRecruitments(recruitmentsData || []);
+      } catch (error) {
+        console.error('Error loading recruitment:', error);
+        toast.error('Failed to load recruitment details');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [id]);
+
+  const similarRecruitments = recruitment ? allRecruitments
+    .filter((r) => r.id !== recruitment.id && r.category_id === recruitment.category_id)
+    .slice(0, 4) : [];
 
   const handleApply = () => {
     setHasApplied(true);
@@ -33,7 +73,28 @@ const RecruitmentDetails = () => {
     setUserRating(0);
   };
 
-  const ratingCount = recruitment.ratingCount || 0;
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!recruitment) {
+    return (
+      <MainLayout>
+        <div className="text-center py-12">
+          <h2 className="text-xl font-semibold">Recruitment not found</h2>
+          <Link to="/recruitment" className="text-primary hover:underline mt-2 inline-block">
+            Browse all opportunities
+          </Link>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -48,16 +109,16 @@ const RecruitmentDetails = () => {
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
           <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
             <span className="px-3 py-1 rounded-full bg-secondary/90 text-secondary-foreground text-xs font-medium">
-              {recruitment.category}
+              {recruitment.categories?.name || 'Opportunity'}
             </span>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-card/80 backdrop-blur-sm text-xs font-medium">
                 <Star className="h-3 w-3 text-orange fill-orange" />
-                {recruitment.rating}
+                {recruitment.rating || 0}
               </div>
               <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-card/80 backdrop-blur-sm text-xs font-medium">
                 <Users className="h-3 w-3 text-primary" />
-                {ratingCount} rated
+                {recruitment.rating_count || 0} rated
               </div>
             </div>
           </div>
@@ -92,8 +153,8 @@ const RecruitmentDetails = () => {
                 <Users className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Total Ratings</p>
-                <p className="text-sm font-medium">{ratingCount} people</p>
+                <p className="text-xs text-muted-foreground">Applicants</p>
+                <p className="text-sm font-medium">{recruitment.applicants || 0} people</p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30">
@@ -102,7 +163,7 @@ const RecruitmentDetails = () => {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Category</p>
-                <p className="text-sm font-medium">{recruitment.category}</p>
+                <p className="text-sm font-medium">{recruitment.categories?.name || 'General'}</p>
               </div>
             </div>
           </div>
@@ -114,7 +175,7 @@ const RecruitmentDetails = () => {
               Requirements
             </h3>
             <div className="flex flex-wrap gap-2">
-              {recruitment.requirements.map((req) => (
+              {(recruitment.requirements || []).map((req) => (
                 <span key={req} className="px-3 py-1 rounded-full bg-secondary/10 text-secondary text-xs font-medium">
                   {req}
                 </span>

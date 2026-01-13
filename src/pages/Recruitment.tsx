@@ -1,19 +1,77 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, Users, Clock, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { recruitments, categories } from '@/data/mockData';
+import { fetchRecruitments, fetchCategories } from '@/lib/database';
+
+interface DbRecruitment {
+  id: string;
+  title: string;
+  description: string;
+  category_id: string | null;
+  poster: string;
+  society: string;
+  deadline: string;
+  requirements: string[];
+  rating: number;
+  rating_count: number;
+  applicants: number;
+  categories?: { name: string; icon: string } | null;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  icon: string;
+}
 
 const Recruitment = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [recruitments, setRecruitments] = useState<DbRecruitment[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [recruitmentsData, categoriesData] = await Promise.all([
+          fetchRecruitments(),
+          fetchCategories()
+        ]);
+        setRecruitments(recruitmentsData || []);
+        setCategories(categoriesData || []);
+      } catch (error) {
+        console.error('Error loading recruitments:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
   const filteredRecruitments = recruitments.filter((rec) => {
     if (selectedCategory) {
-      return rec.category.toLowerCase() === selectedCategory;
+      return rec.category_id === selectedCategory;
     }
     return true;
   });
+
+  // Count recruitments per category
+  const categoriesWithCount = categories.map(cat => ({
+    ...cat,
+    count: recruitments.filter(r => r.category_id === cat.id).length
+  }));
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -26,7 +84,7 @@ const Recruitment = () => {
           <section>
             <h2 className="text-lg font-semibold mb-4">Categories</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {categories.slice(0, 6).map((cat) => (
+              {categoriesWithCount.slice(0, 6).map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
@@ -34,6 +92,7 @@ const Recruitment = () => {
                 >
                   <span className="text-4xl block mb-3 group-hover:scale-110 transition-transform">{cat.icon}</span>
                   <h3 className="font-semibold">{cat.name}</h3>
+                  <p className="text-xs text-muted-foreground mt-1">{cat.count} positions</p>
                 </button>
               ))}
             </div>
@@ -52,6 +111,9 @@ const Recruitment = () => {
               >
                 ← Back to Categories
               </Button>
+              <span className="text-sm text-muted-foreground">
+                {filteredRecruitments.length} positions found
+              </span>
             </div>
 
             <div className="space-y-4">
@@ -74,7 +136,7 @@ const Recruitment = () => {
                         <h3 className="font-semibold line-clamp-1">{recruitment.title}</h3>
                         <div className="flex items-center gap-1 text-xs bg-card px-2 py-0.5 rounded-full">
                           <Star className="h-3 w-3 text-orange fill-orange" />
-                          {recruitment.rating}
+                          {recruitment.rating || 0}
                         </div>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">{recruitment.society}</p>
@@ -89,7 +151,7 @@ const Recruitment = () => {
                       
                       <div className="flex items-center justify-between">
                         <div className="flex flex-wrap gap-1">
-                          {recruitment.requirements.slice(0, 2).map((req) => (
+                          {(recruitment.requirements || []).slice(0, 2).map((req) => (
                             <span key={req} className="px-2 py-0.5 rounded-full bg-secondary/10 text-secondary text-[10px] font-medium">
                               {req}
                             </span>
@@ -111,16 +173,17 @@ const Recruitment = () => {
         {!selectedCategory && (
           <section>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Open Positions</h2>
+              <h2 className="text-lg font-semibold">Open Positions ({recruitments.length})</h2>
               <button className="text-sm text-primary hover:underline flex items-center gap-1">
                 View All <ChevronRight className="h-4 w-4" />
               </button>
             </div>
             <div className="space-y-4">
               {recruitments.map((recruitment) => (
-                <div
+                <Link
                   key={recruitment.id}
-                  className="glass-card p-4 hover:shadow-elevated transition-all duration-300"
+                  to={`/recruitment/${recruitment.id}`}
+                  className="glass-card p-4 hover:shadow-elevated transition-all duration-300 block"
                 >
                   <div className="flex items-center gap-4">
                     <img
@@ -137,7 +200,7 @@ const Recruitment = () => {
                       Apply
                     </Button>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </section>
