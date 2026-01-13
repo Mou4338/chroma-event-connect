@@ -1,18 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, Phone, GraduationCap, Calendar } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 
 const programmes = ['B.TECH', 'M.TECH', 'BBA', 'MBA', 'B.SC', 'M.SC', 'LLB', 'B.COM'];
 const branches = ['CSE', 'ECE', 'EE', 'ME', 'CE', 'IT', 'CSSE', 'CSCE', 'Biotech'];
@@ -24,8 +18,6 @@ const Signup = () => {
   const { signup } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showOtpDialog, setShowOtpDialog] = useState(false);
-  const [otp, setOtp] = useState('');
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -92,17 +84,6 @@ const Signup = () => {
       return;
     }
 
-    // Show OTP dialog for verification
-    setShowOtpDialog(true);
-    toast.info('OTP sent to your KIIT email!');
-  };
-
-  const handleVerifyOtp = async () => {
-    if (otp.length !== 6) {
-      toast.error('Please enter a valid 6-digit OTP');
-      return;
-    }
-
     setIsLoading(true);
     try {
       await signup({
@@ -115,7 +96,6 @@ const Signup = () => {
       toast.error(error instanceof Error ? error.message : 'Signup failed');
     } finally {
       setIsLoading(false);
-      setShowOtpDialog(false);
     }
   };
 
@@ -303,43 +283,6 @@ const Signup = () => {
           </Link>
         </p>
       </div>
-
-      {/* OTP Dialog */}
-      <Dialog open={showOtpDialog} onOpenChange={setShowOtpDialog}>
-        <DialogContent className="glass-card border-border/50 max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-center gradient-text">Verify Your Email</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <p className="text-center text-sm text-muted-foreground">
-              Enter the 6-digit OTP sent to your KIIT email
-            </p>
-            <Input
-              type="text"
-              placeholder="000000"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              className="text-center text-2xl tracking-widest"
-              maxLength={6}
-            />
-            <Button 
-              onClick={handleVerifyOtp} 
-              variant="gradient" 
-              size="lg" 
-              className="w-full"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Verifying...' : 'Verify & Create Account'}
-            </Button>
-            <button
-              onClick={() => toast.info('OTP resent!')}
-              className="text-sm text-primary hover:underline w-full text-center"
-            >
-              Resend OTP
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
