@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Star, MapPin, Clock, Users, MessageSquare, ChevronRight, QrCode, Sparkles, Brain, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { fetchEventById, fetchEvents } from '@/lib/database';
+import { fetchEventById, fetchEvents, registerForEvent as dbRegisterForEvent } from '@/lib/database';
 import { getSimilarEvents, useAISuggestions } from '@/hooks/useAISuggestions';
+import { getEventAnnouncementChannel, isUserRegisteredForEvent } from '@/lib/announcements-events';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 interface DbEvent {
@@ -27,12 +29,15 @@ interface DbEvent {
 
 const EventDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [event, setEvent] = useState<DbEvent | null>(null);
   const [allEvents, setAllEvents] = useState<DbEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [userRating, setUserRating] = useState(0);
   const [comment, setComment] = useState('');
   const [isRegistered, setIsRegistered] = useState(false);
+  const [announcementChannelId, setAnnouncementChannelId] = useState<string | null>(null);
   
   const { registerForEvent, rateEvent, submitFeedback } = useAISuggestions();
 
@@ -42,12 +47,20 @@ const EventDetails = () => {
       
       setLoading(true);
       try {
-        const [eventData, eventsData] = await Promise.all([
+        const [eventData, eventsData, announcementChannel] = await Promise.all([
           fetchEventById(id),
-          fetchEvents()
+          fetchEvents(),
+          getEventAnnouncementChannel(id),
         ]);
         setEvent(eventData);
         setAllEvents(eventsData || []);
+        setAnnouncementChannelId(announcementChannel?.id || null);
+        
+        // Check if user is registered
+        if (user && eventData) {
+          const registered = await isUserRegisteredForEvent(user.id, id);
+          setIsRegistered(registered);
+        }
       } catch (error) {
         console.error('Error loading event:', error);
         toast.error('Failed to load event details');
@@ -57,15 +70,31 @@ const EventDetails = () => {
     };
     
     loadEvent();
-  }, [id]);
+  }, [id, user]);
 
   const similarEvents = event ? getSimilarEvents(event, allEvents, 4) : [];
 
-  const handleRegister = () => {
-    if (!event) return;
-    setIsRegistered(true);
-    registerForEvent(event.id);
-    toast.success('Successfully registered for the event!');
+  const handleRegister = async () => {
+    if (!event || !user) {
+      toast.error('Please log in to register');
+      return;
+    }
+    
+    try {
+      await dbRegisterForEvent(user.id, event.id);
+      setIsRegistered(true);
+      registerForEvent(event.id);
+      toast.success('Successfully registered for the event!');
+    } catch (error) {
+      console.error('Error registering:', error);
+      toast.error('Failed to register for event');
+    }
+  };
+
+  const handleJoinChannel = () => {
+    if (announcementChannelId) {
+      navigate(`/announcements?channel=${announcementChannelId}`);
+    }
   };
 
   const handleSubmitReview = () => {
@@ -270,11 +299,19 @@ const EventDetails = () => {
           </div>
         </div>
 
-        {/* Join Group Button */}
-        <Button variant="glass" size="lg" className="w-full">
-          <MessageSquare className="h-5 w-5 mr-2" />
-          Join Event Group
-        </Button>
+        {/* Join Announcement Channel Button */}
+        {announcementChannelId && (
+          <Button 
+            variant="glass" 
+            size="lg" 
+            className="w-full"
+            onClick={handleJoinChannel}
+            disabled={!isRegistered}
+          >
+            <MessageSquare className="h-5 w-5 mr-2" />
+            {isRegistered ? 'Join Event Channel' : 'Register to Join Channel'}
+          </Button>
+        )}
 
         {/* AI-Powered Similar Events */}
         {similarEvents.length > 0 && (
