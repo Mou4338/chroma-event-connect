@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Pin, ArrowLeft, MoreVertical, Search, Bell, BellOff, Users, Megaphone } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,7 @@ import { toast } from 'sonner';
 import {
   fetchAnnouncements,
   fetchAnnouncementMessages,
+  fetchAnnouncementById,
   sendMessage,
   subscribeToMessages,
   updateLastRead,
@@ -30,6 +32,7 @@ import { CreateAnnouncementDialog } from '@/components/announcements/CreateAnnou
 
 const Announcements = () => {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [announcements, setAnnouncements] = useState<DbAnnouncement[]>([]);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<DbAnnouncement | null>(null);
   const [messages, setMessages] = useState<DbAnnouncementMessage[]>([]);
@@ -44,6 +47,27 @@ const Announcements = () => {
   useEffect(() => {
     loadAnnouncements();
   }, []);
+
+  // Handle channel query param for direct navigation
+  useEffect(() => {
+    const channelId = searchParams.get('channel');
+    if (channelId && !loading && announcements.length > 0) {
+      const targetAnnouncement = announcements.find(a => a.id === channelId);
+      if (targetAnnouncement) {
+        handleSelectAnnouncement(targetAnnouncement);
+        // Clear the query param after opening
+        setSearchParams({});
+      } else {
+        // Try to fetch directly if not in list
+        fetchAnnouncementById(channelId).then((announcement) => {
+          if (announcement) {
+            handleSelectAnnouncement(announcement);
+            setSearchParams({});
+          }
+        });
+      }
+    }
+  }, [searchParams, loading, announcements]);
 
   // Subscribe to real-time messages when an announcement is selected
   useEffect(() => {

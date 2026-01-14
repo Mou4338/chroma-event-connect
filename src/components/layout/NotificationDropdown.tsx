@@ -26,7 +26,7 @@ export const NotificationDropdown = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -43,20 +43,27 @@ export const NotificationDropdown = () => {
       // Get recent messages from announcements
       const notifs: Notification[] = [];
       
-      for (const announcement of announcements.slice(0, 5)) {
-        const messages = await fetchAnnouncementMessages(announcement.id);
-        const lastMessage = messages[messages.length - 1];
-        
-        if (lastMessage) {
-          notifs.push({
-            id: lastMessage.id,
-            type: 'announcement',
-            title: announcement.title,
-            message: lastMessage.content.substring(0, 50) + (lastMessage.content.length > 50 ? '...' : ''),
-            announcementId: announcement.id,
-            timestamp: lastMessage.created_at,
-            isRead: false,
-          });
+      // Process up to 5 announcements
+      const announcementsToProcess = announcements.slice(0, 5);
+      
+      for (const announcement of announcementsToProcess) {
+        try {
+          const messages = await fetchAnnouncementMessages(announcement.id);
+          const lastMessage = messages[messages.length - 1];
+          
+          if (lastMessage) {
+            notifs.push({
+              id: lastMessage.id,
+              type: 'announcement',
+              title: announcement.title,
+              message: lastMessage.content.substring(0, 50) + (lastMessage.content.length > 50 ? '...' : ''),
+              announcementId: announcement.id,
+              timestamp: lastMessage.created_at,
+              isRead: false,
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching messages for announcement:', announcement.id);
         }
       }
       
@@ -73,11 +80,17 @@ export const NotificationDropdown = () => {
   const handleNotificationClick = (notification: Notification) => {
     setOpen(false);
     if (notification.type === 'announcement' && notification.announcementId) {
+      // Navigate to announcements page with channel query param
       navigate(`/announcements?channel=${notification.announcementId}`);
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const handleViewAll = () => {
+    setOpen(false);
+    navigate('/announcements');
+  };
+
+  const unreadCount = notifications.length;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -99,10 +112,7 @@ export const NotificationDropdown = () => {
               variant="ghost" 
               size="sm" 
               className="text-xs text-muted-foreground"
-              onClick={() => {
-                setOpen(false);
-                navigate('/announcements');
-              }}
+              onClick={handleViewAll}
             >
               View All
               <ChevronRight className="h-3 w-3 ml-1" />
