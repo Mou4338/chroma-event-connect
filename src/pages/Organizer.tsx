@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Calendar, Users, Image, Tag, MapPin, Clock, FileText, Briefcase, List, ChevronDown } from 'lucide-react';
+import { Plus, Calendar, Users, Image, Tag, MapPin, Clock, FileText, Briefcase, List, ChevronDown, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { createEvent, createRecruitment, fetchCategories } from '@/lib/database';
+import { createEventAnnouncementChannel } from '@/lib/announcements-events';
 import { toast } from 'sonner';
 
 type FormType = 'event' | 'recruitment';
@@ -36,6 +39,7 @@ const Organizer = () => {
     time: '',
     tags: '',
     society: '',
+    createAnnouncementChannel: true,
   });
 
   // Recruitment form state
@@ -70,7 +74,7 @@ const Organizer = () => {
 
     setLoading(true);
     try {
-      await createEvent({
+      const createdEvent = await createEvent({
         title: eventForm.title,
         description: eventForm.description,
         category_id: eventForm.category_id || null,
@@ -83,7 +87,24 @@ const Organizer = () => {
         created_by: user.id,
       });
       
-      toast.success('Event created successfully!');
+      // Create announcement channel if requested
+      if (eventForm.createAnnouncementChannel && createdEvent) {
+        try {
+          await createEventAnnouncementChannel({
+            eventId: createdEvent.id,
+            title: eventForm.title,
+            society: eventForm.society,
+            createdBy: user.id,
+          });
+          toast.success('Event created with announcement channel!');
+        } catch (channelError) {
+          console.error('Error creating announcement channel:', channelError);
+          toast.success('Event created! (Announcement channel could not be created)');
+        }
+      } else {
+        toast.success('Event created successfully!');
+      }
+      
       setEventForm({
         title: '',
         description: '',
@@ -94,6 +115,7 @@ const Organizer = () => {
         time: '',
         tags: '',
         society: '',
+        createAnnouncementChannel: true,
       });
       navigate('/events');
     } catch (error: any) {
@@ -321,6 +343,30 @@ const Organizer = () => {
                 placeholder="e.g., Coding, Hackathon, Tech"
                 value={eventForm.tags}
                 onChange={(e) => setEventForm({ ...eventForm, tags: e.target.value })}
+              />
+            </div>
+
+            {/* Announcement Channel Toggle */}
+            <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <MessageSquare className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <Label htmlFor="announcement-channel" className="text-sm font-medium">
+                    Create Announcement Channel
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Automatically create a channel for event updates
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="announcement-channel"
+                checked={eventForm.createAnnouncementChannel}
+                onCheckedChange={(checked) => 
+                  setEventForm({ ...eventForm, createAnnouncementChannel: checked })
+                }
               />
             </div>
 

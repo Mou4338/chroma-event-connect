@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, Bell, Calendar, Trophy, Menu, X, SlidersHorizontal, Tag, Filter } from 'lucide-react';
+import { Search, Trophy, Menu, X, SlidersHorizontal, Tag, Filter, Calendar } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import { NotificationDropdown } from './NotificationDropdown';
+import { CalendarDropdown } from './CalendarDropdown';
 
 interface SearchFilters {
   query: string;
@@ -93,13 +95,8 @@ export const TopNav = () => {
             </Button>
             
             <div className="hidden sm:flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-orange rounded-full text-[10px] text-primary-foreground flex items-center justify-center">3</span>
-              </Button>
-              <Button variant="ghost" size="icon">
-                <Calendar className="h-5 w-5" />
-              </Button>
+              <NotificationDropdown />
+              <CalendarDropdown />
               <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-gradient-to-r from-orange/20 to-primary/20">
                 <Trophy className="h-4 w-4 text-orange" />
                 <span className="text-sm font-semibold">{user?.points || 0}</span>
