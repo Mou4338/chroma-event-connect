@@ -24,6 +24,7 @@ export const CalendarDropdown = () => {
   const [registeredEvents, setRegisteredEvents] = useState<RegisteredEvent[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (open && user) {
@@ -34,17 +35,29 @@ export const CalendarDropdown = () => {
   const loadRegisteredEvents = async () => {
     if (!user) return;
     
+    setLoading(true);
     try {
       const registrations = await getUserRegistrations(user.id);
-      setRegisteredEvents(
-        registrations.map((reg: any) => ({
-          id: reg.event_id,
-          title: reg.events?.title || 'Event',
-          date: reg.events?.date || '',
-        }))
-      );
+      const events: RegisteredEvent[] = [];
+      
+      for (const reg of registrations || []) {
+        if (reg.events && typeof reg.events === 'object' && !Array.isArray(reg.events)) {
+          const eventData = reg.events as { id?: string; title?: string; date?: string };
+          if (eventData.id && eventData.date) {
+            events.push({
+              id: eventData.id,
+              title: eventData.title || 'Event',
+              date: eventData.date,
+            });
+          }
+        }
+      }
+      
+      setRegisteredEvents(events);
     } catch (error) {
       console.error('Error loading registered events:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -70,13 +83,13 @@ export const CalendarDropdown = () => {
 
   // Custom day render with green dots
   const modifiers = {
-    registered: registeredDates.map((date) => parseISO(date)),
-  };
-
-  const modifiersStyles = {
-    registered: {
-      position: 'relative' as const,
-    },
+    registered: registeredDates.map((date) => {
+      try {
+        return parseISO(date);
+      } catch {
+        return new Date();
+      }
+    }),
   };
 
   return (
@@ -96,30 +109,39 @@ export const CalendarDropdown = () => {
             </span>
           </p>
         </div>
-        <Calendar
-          mode="single"
-          selected={selectedDate}
-          onSelect={handleDateSelect}
-          modifiers={modifiers}
-          modifiersStyles={modifiersStyles}
-          components={{
-            DayContent: ({ date }) => {
-              const hasEvent = registeredDates.some((eventDate) =>
-                isSameDay(parseISO(eventDate), date)
-              );
-              
-              return (
-                <div className="relative w-full h-full flex items-center justify-center">
-                  {date.getDate()}
-                  {hasEvent && (
-                    <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-green-500" />
-                  )}
-                </div>
-              );
-            },
-          }}
-          className="rounded-md"
-        />
+        {loading ? (
+          <div className="flex items-center justify-center py-8 px-12">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+          </div>
+        ) : (
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={handleDateSelect}
+            modifiers={modifiers}
+            components={{
+              DayContent: ({ date }) => {
+                const hasEvent = registeredDates.some((eventDate) => {
+                  try {
+                    return isSameDay(parseISO(eventDate), date);
+                  } catch {
+                    return false;
+                  }
+                });
+                
+                return (
+                  <div className="relative w-full h-full flex items-center justify-center">
+                    {date.getDate()}
+                    {hasEvent && (
+                      <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-green-500" />
+                    )}
+                  </div>
+                );
+              },
+            }}
+            className="rounded-md"
+          />
+        )}
         
         {registeredEvents.length > 0 && (
           <div className="p-3 border-t border-border">
